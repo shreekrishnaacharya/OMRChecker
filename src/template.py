@@ -22,7 +22,8 @@ TEMPLATE_DEFAULTS = load_json(TEMPLATE_DEFAULTS_PATH)
 
 def open_template_with_defaults(template_path):
     user_template = load_json(template_path)
-    user_template = OVERRIDE_MERGER.merge(deepcopy(TEMPLATE_DEFAULTS), user_template)
+    user_template = OVERRIDE_MERGER.merge(
+        deepcopy(TEMPLATE_DEFAULTS), user_template)
     is_valid, msg = validate_json(user_template)
 
     if is_valid:
@@ -75,6 +76,7 @@ class Template:
         self.bubble_dimensions = json_obj["bubbleDimensions"]
         self.concatenations = json_obj["concatenations"]
         self.singles = json_obj["singles"]
+        self.ocr = json_obj["ocr"]
 
         # Add new qTypes from template
         if "qTypes" in json_obj:

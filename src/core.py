@@ -22,7 +22,7 @@ from src import constants
 # TODO: use open_config_with_defaults after making a Config class.
 from src.config import CONFIG_DEFAULTS as config
 from src.logger import logger
-
+import pytesseract
 # TODO: further break utils down and separate the imports
 from src.utils.imgutils import (
     ImageUtils,
@@ -63,7 +63,8 @@ def process_dir(root_dir, curr_dir, args, template=None):
     # Look for subdirectories for processing
     subdirs = [d for d in curr_dir.iterdir() if d.is_dir()]
 
-    paths = constants.Paths(Path(args["output_dir"], curr_dir.relative_to(root_dir)))
+    paths = constants.Paths(
+        Path(args["output_dir"], curr_dir.relative_to(root_dir)))
 
     # look for images in current dir to process
     exts = ("*.png", "*.jpg")
@@ -84,7 +85,7 @@ def process_dir(root_dir, curr_dir, args, template=None):
                 directory or specify a template using -t.'
             )
             return
-        
+
         # TODO: get rid of args here
         args_local = args.copy()
         if "OverrideFlags" in template.options:
@@ -95,7 +96,8 @@ def process_dir(root_dir, curr_dir, args, template=None):
         logger.info(f'Processing directory "{curr_dir}" with settings- ')
         logger.info("\tTotal images       : %d" % (len(omr_files)))
         logger.info(
-            "\tCropping Enabled   : " + str("CropOnMarkers" in template.pre_processors)
+            "\tCropping Enabled   : " +
+            str("CropOnMarkers" in template.pre_processors)
         )
         logger.info("\tAuto Alignment     : " + str(args_local["autoAlign"]))
         logger.info("\tUsing Template     : " + str(template))
@@ -150,7 +152,8 @@ def process_omr(template, omr_resp):
 
     # Multi-column/multi-row questions which need to be concatenated
     for q_no, resp_keys in template.concatenations.items():
-        csv_resp[q_no] = "".join([omr_resp.get(k, unmarked_symbol) for k in resp_keys])
+        csv_resp[q_no] = "".join(
+            [omr_resp.get(k, unmarked_symbol) for k in resp_keys])
 
     # Single-column/single-row questions
     for q_no in template.singles:
@@ -161,27 +164,32 @@ def process_omr(template, omr_resp):
     # TODO: ^add a warning if omr_resp has unused keys remaining
     return csv_resp
 
-def process_ocr(template, omr_resp, csv_resp):
+
+def process_ocr(template, ocr_img, save_file, file_id):
     # Note: This is a reference function. It is not part of the OMR checker
     # So its implementation is completely subjective to user's requirements.
 
     # symbol for absent response
     unmarked_symbol = ""
 
-    # print("omr_resp",omr_resp)
+    # print("omr_resp..................", template.ocr.items())
 
     # Multi-column/multi-row questions which need to be concatenated
-    for q_no, resp_keys in template.concatenations.items():
-        csv_resp[q_no] = "".join([omr_resp.get(k, unmarked_symbol) for k in resp_keys])
+    for q_no, dims in template.ocr.items():
+        morph = ocr_img.copy()
+        morph = morph[dims["orig"][0]:int(dims["crop"]
+                      [0]+dims["orig"][0]), dims["orig"][1]:int(dims["crop"][1]+dims["orig"][1])]
+        ImageUtils.save_img(save_file+"ocr_"+q_no+"_"+file_id, morph)
+        print("testing.............")
+        stringname = pytesseract.image_to_string(morph)
+        print("ocr nameeeeeeeee.....", stringname)
 
     # Single-column/single-row questions
-    for q_no in template.singles:
-        csv_resp[q_no] = omr_resp.get(q_no, unmarked_symbol)
 
     # Note: concatenations and singles together should be mutually exclusive
     # and should cover all questions in the template(exhaustive)
     # TODO: ^add a warning if omr_resp has unused keys remaining
-    return csv_resp
+    return unmarked_symbol
 
 
 def report(status, streak, scheme, q_no, marked, ans, prev_marks, curr_marks, marks):
@@ -213,7 +221,8 @@ def setup_output(paths, template):
         key=lambda x: int(x[1:]) if ord(x[1]) in range(48, 58) else 0,
     )
     ns.empty_resp = [""] * len(ns.resp_cols)
-    ns.sheetCols = ["file_id", "input_path", "output_path", "score"] + ns.resp_cols
+    ns.sheetCols = ["file_id", "input_path",
+                    "output_path", "score"] + ns.resp_cols
     ns.OUTPUT_SET = []
     ns.files_obj = {}
     ns.filesMap = {
@@ -273,14 +282,27 @@ def process_files(omr_files, template, args, out):
     start_time = int(time())
     files_counter = 0
     STATS.files_not_moved = 0
-
+    lowerValues = np.array([20, 20, 20])
+    upperValues = np.array([255, 255, 255])
     for file_path in omr_files:
         files_counter += 1
 
         file_name = file_path.name
         args["current_file"] = file_path
 
-        in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
+        # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
+        in_omr = cv2.imread(str(file_path), 1)
+        inputImage = in_omr.copy()
+        inputImage = 255-inputImage
+        imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
+        # create the Mask
+        mask = cv2.inRange(imgHSV, lowerValues, upperValues)
+        # inverse mask
+        mask = 255-mask
+        in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
+        # in_omr = cv2.cvtColor(in_omr, cv2.IMREAD_GRAYSCALE)
+        # ImageUtils.save_img(out.paths.save_marked_dir+"ocr_test_.jpg", in_omr)
+        # continue
         logger.info(
             f"\n({files_counter}) Opening image: \t{file_path}\tResolution: {in_omr.shape}"
         )
@@ -298,6 +320,7 @@ def process_files(omr_files, template, args, out):
         )
 
         # run pre_processors in sequence
+        # /////////////////
         for pre_processor in template.pre_processors:
             in_omr = pre_processor.apply_filter(in_omr, args)
 
@@ -308,7 +331,8 @@ def process_files(omr_files, template, args, out):
             if check_and_move(
                 constants.ERROR_CODES.NO_MARKER_ERR, file_path, new_file_path
             ):
-                err_line = [file_name, file_path, new_file_path, "NA"] + out.empty_resp
+                err_line = [file_name, file_path,
+                            new_file_path, "NA"] + out.empty_resp
                 pd.DataFrame(err_line, dtype=str).T.to_csv(
                     out.files_obj["Errors"],
                     mode="a",
@@ -335,10 +359,10 @@ def process_files(omr_files, template, args, out):
             save_dir=save_dir,
             auto_align=args["autoAlign"],
         )
-        # print("final_marked",final_marked)
-        # print("response_dict",response_dict)
         # concatenate roll nos, set unmarked responses, etc
         resp = process_omr(template, response_dict)
+
+        ocrresp = process_ocr(template, in_omr, save_dir, file_id)
         logger.info("\nRead Response: \t", resp, "\n")
         if config.outputs.show_image_level >= 2:
             MainOperations.show(
@@ -366,7 +390,8 @@ def process_files(omr_files, template, args, out):
             STATS.files_not_moved += 1
             new_file_path = save_dir + file_id
             # Enter into Results sheet-
-            results_line = [file_name, file_path, new_file_path, score] + resp_array
+            results_line = [file_name, file_path,
+                            new_file_path, score] + resp_array
             # Write/Append to results_line file(opened in append mode)
             pd.DataFrame(results_line, dtype=str).T.to_csv(
                 out.files_obj["Results"],
@@ -384,12 +409,14 @@ def process_files(omr_files, template, args, out):
             # print(files_counter,file_id,resp['Roll'],'score : ',score)
         else:
             # multi_marked file
-            logger.info("[%d] multi_marked, moving File: %s" % (files_counter, file_id))
+            logger.info("[%d] multi_marked, moving File: %s" %
+                        (files_counter, file_id))
             new_file_path = out.paths.multi_marked_dir + file_name
             if check_and_move(
                 constants.ERROR_CODES.MULTI_BUBBLE_WARN, file_path, new_file_path
             ):
-                mm_line = [file_name, file_path, new_file_path, "NA"] + resp_array
+                mm_line = [file_name, file_path,
+                           new_file_path, "NA"] + resp_array
                 pd.DataFrame(mm_line, dtype=str).T.to_csv(
                     out.files_obj["MultiMarked"],
                     mode="a",

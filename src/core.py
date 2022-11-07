@@ -76,7 +76,6 @@ def process_dir(root_dir, curr_dir, args, template=None):
             excluded_files.extend(Path(p) for p in pp.exclude_files())
 
     omr_files = [f for f in omr_files if f not in excluded_files]
-
     if omr_files:
         if not template:
             logger.error(
@@ -105,7 +104,6 @@ def process_dir(root_dir, curr_dir, args, template=None):
             logger.info(f"\tUsing preprocessor: {pp.__class__.__name__:13}")
 
         logger.info("")
-        print("template.....................",args_local)
         setup_dirs(paths)
         out = setup_output(paths, template)
         process_files(omr_files, template, args_local, out)
@@ -286,7 +284,6 @@ def process_files(omr_files, template, args, out):
         logger.info(
             f"\n({files_counter}) Opening image: \t{file_path}\tResolution: {in_omr.shape}"
         )
-
         # TODO: Get rid of saveImgList
         for i in range(ImageUtils.save_image_level):
             ImageUtils.reset_save_img(i + 1)
@@ -338,7 +335,6 @@ def process_files(omr_files, template, args, out):
             save_dir=save_dir,
             auto_align=args["autoAlign"],
         )
-        print("multi_marked",multi_marked)
         # print("final_marked",final_marked)
         # print("response_dict",response_dict)
         # concatenate roll nos, set unmarked responses, etc

@@ -37,6 +37,7 @@ QTYPE_DATA = {
     "QTYPE_INT_11": {"vals": range(11), "orient": "V"},
     "QTYPE_MCQ4": {"vals": ["A", "B", "C", "D"], "orient": "H"},
     "QTYPE_MCQ5": {"vals": ["A", "B", "C", "D", "E"], "orient": "H"},
+    "QTYPE_OCR": {"orient": "H"},
     #
     # You can create and append custom question types here-
     #

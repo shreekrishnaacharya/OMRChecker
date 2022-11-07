@@ -85,7 +85,7 @@ def process_dir(root_dir, curr_dir, args, template=None):
                 directory or specify a template using -t.'
             )
             return
-
+        
         # TODO: get rid of args here
         args_local = args.copy()
         if "OverrideFlags" in template.options:
@@ -105,7 +105,7 @@ def process_dir(root_dir, curr_dir, args, template=None):
             logger.info(f"\tUsing preprocessor: {pp.__class__.__name__:13}")
 
         logger.info("")
-
+        print("template.....................",args_local)
         setup_dirs(paths)
         out = setup_output(paths, template)
         process_files(omr_files, template, args_local, out)
@@ -144,6 +144,28 @@ def process_omr(template, omr_resp):
     # Note: This is a reference function. It is not part of the OMR checker
     # So its implementation is completely subjective to user's requirements.
     csv_resp = {}
+
+    # symbol for absent response
+    unmarked_symbol = ""
+
+    # print("omr_resp",omr_resp)
+
+    # Multi-column/multi-row questions which need to be concatenated
+    for q_no, resp_keys in template.concatenations.items():
+        csv_resp[q_no] = "".join([omr_resp.get(k, unmarked_symbol) for k in resp_keys])
+
+    # Single-column/single-row questions
+    for q_no in template.singles:
+        csv_resp[q_no] = omr_resp.get(q_no, unmarked_symbol)
+
+    # Note: concatenations and singles together should be mutually exclusive
+    # and should cover all questions in the template(exhaustive)
+    # TODO: ^add a warning if omr_resp has unused keys remaining
+    return csv_resp
+
+def process_ocr(template, omr_resp, csv_resp):
+    # Note: This is a reference function. It is not part of the OMR checker
+    # So its implementation is completely subjective to user's requirements.
 
     # symbol for absent response
     unmarked_symbol = ""
@@ -316,7 +338,9 @@ def process_files(omr_files, template, args, out):
             save_dir=save_dir,
             auto_align=args["autoAlign"],
         )
-
+        print("multi_marked",multi_marked)
+        # print("final_marked",final_marked)
+        # print("response_dict",response_dict)
         # concatenate roll nos, set unmarked responses, etc
         resp = process_omr(template, response_dict)
         logger.info("\nRead Response: \t", resp, "\n")

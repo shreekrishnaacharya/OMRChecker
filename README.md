@@ -126,6 +126,7 @@ Recommended:
 python3 -m pip install --user --upgrade pip
 python3 -m pip install --user opencv-python
 python3 -m pip install --user opencv-contrib-python
+python3 -m pip install --user pytesseract
 ```
 
 More details on pip install openCV [here](https://www.pyimagesearch.com/2018/09/19/pip-install-opencv/).
@@ -141,6 +142,7 @@ More details on pip install openCV [here](https://www.pyimagesearch.com/2018/09/
 On a fresh computer, some of the libraries may get missing in event after a successful pip install. Install them using following commands[(ref)](https://www.pyimagesearch.com/2018/05/28/ubuntu-18-04-how-to-install-opencv/):
 
 ```bash
+sudo apt install tesseract-ocr //for OCR
 sudo apt-get install -y build-essential cmake unzip pkg-config
 sudo apt-get install -y libjpeg-dev libpng-dev libtiff-dev
 sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev

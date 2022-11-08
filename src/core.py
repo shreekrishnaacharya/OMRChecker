@@ -165,12 +165,9 @@ def process_omr(template, omr_resp):
     return csv_resp
 
 
-def process_ocr(template, ocr_img, save_file, file_id):
+def process_ocr(template, ocr_img, save_file, file_id, csv_resp):
     # Note: This is a reference function. It is not part of the OMR checker
     # So its implementation is completely subjective to user's requirements.
-
-    # symbol for absent response
-    unmarked_symbol = ""
 
     # print("omr_resp..................", template.ocr.items())
 
@@ -179,17 +176,16 @@ def process_ocr(template, ocr_img, save_file, file_id):
         morph = ocr_img.copy()
         morph = morph[dims["orig"][0]:int(dims["crop"]
                       [0]+dims["orig"][0]), dims["orig"][1]:int(dims["crop"][1]+dims["orig"][1])]
-        ImageUtils.save_img(save_file+"ocr_"+q_no+"_"+file_id, morph)
-        print("testing.............")
         stringname = pytesseract.image_to_string(morph)
-        print("ocr nameeeeeeeee.....", stringname)
+        csv_resp[q_no] = stringname
+        ImageUtils.save_img(save_file+file_id, morph)
 
     # Single-column/single-row questions
 
     # Note: concatenations and singles together should be mutually exclusive
     # and should cover all questions in the template(exhaustive)
     # TODO: ^add a warning if omr_resp has unused keys remaining
-    return unmarked_symbol
+    return csv_resp
 
 
 def report(status, streak, scheme, q_no, marked, ans, prev_marks, curr_marks, marks):
@@ -217,9 +213,11 @@ def setup_output(paths, template):
     # custom sort: To use integer order in question names instead of
     # alphabetical - avoids q1, q10, q2 and orders them q1, q2, ..., q10
     ns.resp_cols = sorted(
-        list(template.concatenations.keys()) + template.singles,
+        list(template.concatenations.keys()) +
+        template.singles + list(template.ocr.keys()),
         key=lambda x: int(x[1:]) if ord(x[1]) in range(48, 58) else 0,
     )
+    print(ns.resp_cols,"columns.............")
     ns.empty_resp = [""] * len(ns.resp_cols)
     ns.sheetCols = ["file_id", "input_path",
                     "output_path", "score"] + ns.resp_cols
@@ -292,15 +290,14 @@ def process_files(omr_files, template, args, out):
 
         # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
         in_omr = cv2.imread(str(file_path), 1)
-        inputImage = in_omr.copy()
-        inputImage = 255-inputImage
-        imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
-        # create the Mask
-        mask = cv2.inRange(imgHSV, lowerValues, upperValues)
-        # inverse mask
-        mask = 255-mask
-        in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
-        # in_omr = cv2.cvtColor(in_omr, cv2.IMREAD_GRAYSCALE)
+        # inputImage = in_omr.copy()
+        # inputImage = 255-inputImage
+        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
+        # # create the Mask
+        # mask = cv2.inRange(imgHSV, lowerValues, upperValues)
+        # # inverse mask
+        # mask = 255-mask
+        # in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
         # ImageUtils.save_img(out.paths.save_marked_dir+"ocr_test_.jpg", in_omr)
         # continue
         logger.info(
@@ -361,8 +358,7 @@ def process_files(omr_files, template, args, out):
         )
         # concatenate roll nos, set unmarked responses, etc
         resp = process_omr(template, response_dict)
-
-        ocrresp = process_ocr(template, in_omr, save_dir, file_id)
+        resp = process_ocr(template, in_omr, save_dir, file_id, resp)
         logger.info("\nRead Response: \t", resp, "\n")
         if config.outputs.show_image_level >= 2:
             MainOperations.show(

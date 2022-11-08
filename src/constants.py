@@ -13,9 +13,12 @@ from dotmap import DotMap
 
 # Paths
 CURRENT_MODULE_DIR = os.path.dirname(__file__)
-CONFIG_DEFAULTS_PATH = os.path.join(CURRENT_MODULE_DIR, "defaults", "config.json")
-SCHEMA_DEFAULTS_PATH = os.path.join(CURRENT_MODULE_DIR, "defaults", "schema.json")
-TEMPLATE_DEFAULTS_PATH = os.path.join(CURRENT_MODULE_DIR, "defaults", "template.json")
+CONFIG_DEFAULTS_PATH = os.path.join(
+    CURRENT_MODULE_DIR, "defaults", "config.json")
+SCHEMA_DEFAULTS_PATH = os.path.join(
+    CURRENT_MODULE_DIR, "defaults", "schema.json")
+TEMPLATE_DEFAULTS_PATH = os.path.join(
+    CURRENT_MODULE_DIR, "defaults", "template.json")
 
 # Filenames
 TEMPLATE_FILENAME = "template.json"
@@ -32,7 +35,8 @@ ERROR_CODES = DotMap(
 
 QTYPE_DATA = {
     "QTYPE_MED": {"vals": ["E", "H"], "orient": "V"},
-    "QTYPE_ROLL": {"vals": range(10), "orient": "V"},
+    "QTYPE_CLASS": {"vals": [8, 9, 10, 11, 12], "orient": "V"},
+    "QTYPE_ROLL": {"vals": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], "orient": "V"},
     "QTYPE_INT": {"vals": range(10), "orient": "V"},
     "QTYPE_INT_11": {"vals": range(11), "orient": "V"},
     "QTYPE_MCQ4": {"vals": ["A", "B", "C", "D"], "orient": "H"},

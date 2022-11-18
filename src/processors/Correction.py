@@ -15,14 +15,14 @@ from src.utils.imgutils import (
 from .interfaces.ImagePreprocessor import ImagePreprocessor
 
 
-class CropOnMarkers(ImagePreprocessor):
+class COrrection(ImagePreprocessor):
     def __init__(self, marker_ops, cwd):
         self.threshold_circles = []
         # img_utils = ImageUtils()
 
         # options with defaults
         self.marker_path = os.path.join(
-            cwd, marker_ops.get("relativePath", "omr_marker.jpg")
+            cwd, marker_ops.get("relativePath", "correction.jpg")
         )
         self.min_matching_threshold = marker_ops.get(
             "min_matching_threshold", 0.3)
@@ -41,13 +41,6 @@ class CropOnMarkers(ImagePreprocessor):
 
         marker = cv2.imread(self.marker_path, 0)
 
-        if "sheetToMarkerWidthRatio" in marker_ops:
-            # TODO: processing_width should come through proper channel
-            marker = ImageUtils.resize_util(
-                marker,
-                config.dimensions.processing_width
-                / int(marker_ops["sheetToMarkerWidthRatio"]),
-            )
         marker = cv2.GaussianBlur(marker, (5, 5), 0)
         marker = cv2.normalize(
             marker, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX

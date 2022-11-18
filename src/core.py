@@ -290,9 +290,20 @@ def process_files(omr_files, template, args, out):
 
         # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
         in_omr = cv2.imread(str(file_path), 1)
+        # more bright image
+        in_omr = adjust_contrast_brightness(in_omr, 2.5, 61)
+        in_omr = cv2.cvtColor(in_omr, cv2.COLOR_BGR2HSV)
+        # uniquify
+        inputImage = in_omr.copy()
+        inputImage = 255-inputImage
 
-        # ImageUtils.save_img(out.paths.save_marked_dir+"ocr_test_.jpg", in_omr)
-        # continue
+        # # create the Mask
+        mask = cv2.inRange(inputImage, lowerValues, upperValues)
+        # inverse mask
+        in_omr = 255-mask
+        ImageUtils.save_img(out.paths.save_marked_dir +
+                            "ocr_test"+str(files_counter)+"_.jpg", in_omr)
+        continue
         logger.info(
             f"\n({files_counter}) Opening image: \t{file_path}\tResolution: {in_omr.shape}"
         )
@@ -343,12 +354,16 @@ def process_files(omr_files, template, args, out):
         # inputImage = in_omr.copy()
         # inputImage = 255-inputImage
         # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
+        # ImageUtils.save_img(out.paths.save_marked_dir +
+        #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
+        # continue
         # # create the Mask
-        # mask = cv2.inRange(imgHSV, lowerValues, upperValues)
-        # # inverse mask
-        # mask = 255-mask
-        # in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
-        
+        cv2.imshow("img", in_omr)
+        cv2.waitKey(0)
+        mask = cv2.inRange(in_omr, lowerValues, upperValues)
+        # inverse mask
+        in_omr = 255-mask
+
         file_id = str(file_name)
         save_dir = out.paths.save_marked_dir
         response_dict, final_marked, multi_marked, _ = MainOperations.read_response(
@@ -539,6 +554,29 @@ def evaluate_correctness(out):
             logger.error(
                 "Missing File-ids: ", list(x_df.index.difference(intersection))
             )
+
+
+def increase_brightness(img, value=30):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+
+    lim = 255 - value
+    v[v > lim] = 255
+    v[v <= lim] += value
+
+    final_hsv = cv2.merge((h, s, v))
+    img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+    return img
+
+
+def adjust_contrast_brightness(img, contrast: float = 1.0, brightness: int = 0):
+    """
+    Adjusts contrast and brightness of an uint8 image.
+    contrast:   (0.0,  inf) with 1.0 leaving the contrast as is
+    brightness: [-255, 255] with 0 leaving the brightness as is
+    """
+    brightness += int(round(255*(1-contrast)/2))
+    return cv2.addWeighted(img, contrast, img, 0, brightness)
 
 
 TIME_NOW_HRS = strftime("%I%p", localtime())

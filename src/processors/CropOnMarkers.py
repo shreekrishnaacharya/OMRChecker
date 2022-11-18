@@ -39,7 +39,7 @@ class CropOnMarkers(ImagePreprocessor):
             )
             exit(31)
 
-        marker = cv2.imread(self.marker_path, 0)
+        marker = cv2.imread(self.marker_path, 1)
 
         if "sheetToMarkerWidthRatio" in marker_ops:
             # TODO: processing_width should come through proper channel

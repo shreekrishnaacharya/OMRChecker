@@ -16,7 +16,6 @@ from time import localtime, strftime, time
 import cv2
 import numpy as np
 import pandas as pd
-
 from src import constants
 
 # TODO: use open_config_with_defaults after making a Config class.
@@ -35,7 +34,7 @@ from src.utils.imgutils import (
 from .processors.manager import ProcessorManager
 from .template import Template
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 # Load processors
@@ -169,7 +168,7 @@ def process_ocr(template, ocr_img, save_file, file_id, csv_resp):
     # Note: This is a reference function. It is not part of the OMR checker
     # So its implementation is completely subjective to user's requirements.
 
-    # print("omr_resp..................", template.ocr.items())
+    print("ocr_resp..................", template.ocr.items())
 
     # Multi-column/multi-row questions which need to be concatenated
     for q_no, dims in template.ocr.items():
@@ -177,8 +176,9 @@ def process_ocr(template, ocr_img, save_file, file_id, csv_resp):
         morph = morph[dims["orig"][0]:int(dims["crop"]
                       [0]+dims["orig"][0]), dims["orig"][1]:int(dims["crop"][1]+dims["orig"][1])]
         stringname = pytesseract.image_to_string(morph)
+        print("name text ..........", stringname)
         csv_resp[q_no] = stringname
-        ImageUtils.save_img(save_file+file_id, morph)
+        ImageUtils.save_img(save_file+"ocr_"+file_id, morph)
 
     # Single-column/single-row questions
 
@@ -217,7 +217,7 @@ def setup_output(paths, template):
         template.singles + list(template.ocr.keys()),
         key=lambda x: int(x[1:]) if ord(x[1]) in range(48, 58) else 0,
     )
-    print(ns.resp_cols,"columns.............")
+    print(ns.resp_cols, "columns.............")
     ns.empty_resp = [""] * len(ns.resp_cols)
     ns.sheetCols = ["file_id", "input_path",
                     "output_path", "score"] + ns.resp_cols
@@ -280,7 +280,7 @@ def process_files(omr_files, template, args, out):
     start_time = int(time())
     files_counter = 0
     STATS.files_not_moved = 0
-    lowerValues = np.array([20, 20, 20])
+    lowerValues = np.array([100, 100, 100])
     upperValues = np.array([255, 255, 255])
     for file_path in omr_files:
         files_counter += 1
@@ -290,14 +290,7 @@ def process_files(omr_files, template, args, out):
 
         # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
         in_omr = cv2.imread(str(file_path), 1)
-        # inputImage = in_omr.copy()
-        # inputImage = 255-inputImage
-        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
-        # # create the Mask
-        # mask = cv2.inRange(imgHSV, lowerValues, upperValues)
-        # # inverse mask
-        # mask = 255-mask
-        # in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
+
         # ImageUtils.save_img(out.paths.save_marked_dir+"ocr_test_.jpg", in_omr)
         # continue
         logger.info(
@@ -347,6 +340,15 @@ def process_files(omr_files, template, args, out):
             continue
 
         # uniquify
+        # inputImage = in_omr.copy()
+        # inputImage = 255-inputImage
+        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
+        # # create the Mask
+        # mask = cv2.inRange(imgHSV, lowerValues, upperValues)
+        # # inverse mask
+        # mask = 255-mask
+        # in_omr = 255 - cv2.bitwise_and(inputImage, inputImage, mask=mask)
+        
         file_id = str(file_name)
         save_dir = out.paths.save_marked_dir
         response_dict, final_marked, multi_marked, _ = MainOperations.read_response(

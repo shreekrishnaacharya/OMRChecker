@@ -288,7 +288,7 @@ def process_files(omr_files, template, args, out):
         args["current_file"] = file_path
 
         # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
-        in_omr = cv2.imread(str(file_path))
+        in_omr = cv2.imread(str(file_path), 1)
 
         # more bright image
 
@@ -341,33 +341,17 @@ def process_files(omr_files, template, args, out):
             MainOperations.show("Template Layout", template_layout, 1, 1)
             continue
 
-        # uniquify
-        # inputImage = in_omr.copy()
-        # inputImage = 255-inputImage
-        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_GRAY2BGR)
+        in_omr1 = adjust_contrast_brightness(in_omr, 2.2, 1)
+        in_omr2 = cv2.GaussianBlur(in_omr1, (3, 3), 0)
+        lowerValues = np.array([0, 0, 108])
+        upperValues = np.array([255, 237, 255])
+        in_omr3 = cv2.inRange(in_omr2, lowerValues, upperValues)
+        in_omr = cv2.cvtColor(in_omr3, cv2.COLOR_GRAY2BGR)
         # ImageUtils.save_img(out.paths.save_marked_dir +
         #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
-        # continue
-        in_omr = adjust_contrast_brightness(in_omr, 2.2, 1)
-        # uniquify
-        # inputImage = in_omr.copy()
-        # inputImage = 255-inputImage
-        # in_omr = cv2.GaussianBlur(inputImage, (5, 5), 0)
-        lowerValues = np.array([0, 7, 131])
-        upperValues = np.array([255, 255, 255])
-        # in_omr = 255-in_omr
-        # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_GRAY2BGR)
-        # # create the Mask
-        # in_omr[:, :, 2] = np.zeros([in_omr.shape[0], in_omr.shape[1]])
-        in_omr = cv2.inRange(in_omr, lowerValues, upperValues)
-        # in_omr = cv2.bitwise_not(in_omr, in_omr, mask=mask)
-        # inverse mask
-        # in_omr = mask-in_omr
-        # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_GRAY2BGR)
+
         cv2.imshow("im", in_omr)
         cv2.waitKey(0)
-        ImageUtils.save_img(out.paths.save_marked_dir +
-                            "ocr_test"+str(files_counter)+"_.jpg", in_omr)
         continue
         file_id = str(file_name)
         save_dir = out.paths.save_marked_dir

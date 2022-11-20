@@ -280,8 +280,8 @@ def process_files(omr_files, template, args, out):
     start_time = int(time())
     files_counter = 0
     STATS.files_not_moved = 0
-    lowerValues = np.array([35, 35, 35])
-    upperValues = np.array([255, 255, 255])
+    lowerValues = np.array([100, 100, 100], dtype=np.uint8)
+    upperValues = np.array([255, 255, 255], dtype=np.uint8)
     for file_path in omr_files:
         files_counter += 1
 
@@ -289,7 +289,7 @@ def process_files(omr_files, template, args, out):
         args["current_file"] = file_path
 
         # in_omr = cv2.imread(str(file_path), cv2.IMREAD_GRAYSCALE)
-        in_omr = cv2.imread(str(file_path), 1)
+        in_omr = cv2.imread(str(file_path))
 
         # more bright image
 
@@ -344,25 +344,29 @@ def process_files(omr_files, template, args, out):
 
         # uniquify
         # inputImage = in_omr.copy()
-        # inputImage = 255-inputImage
-        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_BGR2HSV)
+        in_omr = 255-in_omr
+        in_omr = adjust_contrast_brightness(in_omr, 2.4, -90)
         # ImageUtils.save_img(out.paths.save_marked_dir +
         #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
         # continue
-        in_omr = adjust_contrast_brightness(in_omr, 1.8, 131)
+
         # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_BGR2HSV)
+        # define kernel size
+        # kernel = np.ones((7, 7), np.uint8)
+        # # Remove unnecessary noise from mask
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         # uniquify
-        inputImage = in_omr.copy()
-        inputImage = 255-inputImage
-        inputImage = cv2.GaussianBlur(inputImage, (5, 5), 0)
-        # # create the Mask
-        mask = cv2.inRange(inputImage, lowerValues, upperValues)
-        # inverse mask
-        in_omr = 255-mask
+        # inputImage = in_omr.copy()
+        # inputImage = 255-inputImage
+        
         # # # create the Mask
-        # mask = cv2.inRange(in_omr, lowerValues, upperValues)
+        in_omr = cv2.inRange(in_omr, lowerValues, upperValues)
         # inverse mask
-        # in_omr = 255-mask
+        in_omr = 255-in_omr
+        in_omr = cv2.GaussianBlur(in_omr, (5, 5), 0)
+        # in_omr = cv2.bitwise_and(in_omr, in_omr, mask=in_omr)
+        # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_GRAY2BGR)
         ImageUtils.save_img(out.paths.save_marked_dir +
                             "ocr_test"+str(files_counter)+"_.jpg", in_omr)
         continue

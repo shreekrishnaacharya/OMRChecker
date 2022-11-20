@@ -280,8 +280,7 @@ def process_files(omr_files, template, args, out):
     start_time = int(time())
     files_counter = 0
     STATS.files_not_moved = 0
-    lowerValues = np.array([100, 100, 100], dtype=np.uint8)
-    upperValues = np.array([255, 255, 255], dtype=np.uint8)
+
     for file_path in omr_files:
         files_counter += 1
 
@@ -344,29 +343,29 @@ def process_files(omr_files, template, args, out):
 
         # uniquify
         # inputImage = in_omr.copy()
-        in_omr = 255-in_omr
-        in_omr = adjust_contrast_brightness(in_omr, 2.4, -90)
+        # inputImage = 255-inputImage
+        # imgHSV = cv2.cvtColor(inputImage, cv2.COLOR_GRAY2BGR)
         # ImageUtils.save_img(out.paths.save_marked_dir +
         #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
         # continue
-
-        # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_BGR2HSV)
-        # define kernel size
-        # kernel = np.ones((7, 7), np.uint8)
-        # # Remove unnecessary noise from mask
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        in_omr = adjust_contrast_brightness(in_omr, 2.2, 1)
         # uniquify
         # inputImage = in_omr.copy()
         # inputImage = 255-inputImage
-        
-        # # # create the Mask
-        in_omr = cv2.inRange(in_omr, lowerValues, upperValues)
-        # inverse mask
-        in_omr = 255-in_omr
-        in_omr = cv2.GaussianBlur(in_omr, (5, 5), 0)
-        # in_omr = cv2.bitwise_and(in_omr, in_omr, mask=in_omr)
+        # in_omr = cv2.GaussianBlur(inputImage, (5, 5), 0)
+        lowerValues = np.array([0, 7, 131])
+        upperValues = np.array([255, 255, 255])
+        # in_omr = 255-in_omr
         # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_GRAY2BGR)
+        # # create the Mask
+        # in_omr[:, :, 2] = np.zeros([in_omr.shape[0], in_omr.shape[1]])
+        in_omr = cv2.inRange(in_omr, lowerValues, upperValues)
+        # in_omr = cv2.bitwise_not(in_omr, in_omr, mask=mask)
+        # inverse mask
+        # in_omr = mask-in_omr
+        # in_omr = cv2.cvtColor(in_omr, cv2.COLOR_GRAY2BGR)
+        cv2.imshow("im", in_omr)
+        cv2.waitKey(0)
         ImageUtils.save_img(out.paths.save_marked_dir +
                             "ocr_test"+str(files_counter)+"_.jpg", in_omr)
         continue

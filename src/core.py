@@ -341,18 +341,18 @@ def process_files(omr_files, template, args, out):
             MainOperations.show("Template Layout", template_layout, 1, 1)
             continue
 
-        in_omr1 = adjust_contrast_brightness(in_omr, 2.2, 1)
-        in_omr2 = cv2.GaussianBlur(in_omr1, (3, 3), 0)
+        in_omr1 = adjust_contrast_brightness(in_omr, 2.3, 5)
+        # in_omr2 = cv2.GaussianBlur(in_omr1, (3, 3), 0)
         lowerValues = np.array([0, 0, 108])
         upperValues = np.array([255, 237, 255])
-        in_omr3 = cv2.inRange(in_omr2, lowerValues, upperValues)
+        in_omr3 = cv2.inRange(in_omr1, lowerValues, upperValues)
         in_omr = cv2.cvtColor(in_omr3, cv2.COLOR_GRAY2BGR)
         # ImageUtils.save_img(out.paths.save_marked_dir +
         #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
 
-        cv2.imshow("im", in_omr)
-        cv2.waitKey(0)
-        continue
+        # cv2.imshow("im", in_omr)
+        # cv2.waitKey(0)
+        # continue
         file_id = str(file_name)
         save_dir = out.paths.save_marked_dir
         response_dict, final_marked, multi_marked, _ = MainOperations.read_response(

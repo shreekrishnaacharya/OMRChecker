@@ -62,14 +62,32 @@ class Correction(ImagePreprocessor):
 
         w, h = self.marker.shape[::-1]
         res = cv2.matchTemplate(imageG, self.marker, cv2.TM_CCOEFF_NORMED)
-        loc = np.where(res >= threshold)
 
+        loc = np.where(res >= threshold)
+        # print(loc)
+        # cv2.imshow("found", res)
+        # cv2.waitKey(0)
         mask = np.zeros_like(imageG)
         for pt in zip(*loc[::-1]):
             #a = cv2.rectangle(image, pt, (pt[0] + w, pt[1] + h), (0,0,255), 1)
             # Reduce the size of the rectangle by 3 pixels from each side
             cv2.rectangle(mask, (pt[0]+3, pt[1]+3),
                           (pt[0]+w-3, pt[1]+h-3), 255, -1)
+            print(pt, "this is example")
 
         image = cv2.inpaint(image, mask, 2, cv2.INPAINT_NS)
-        return image
+        # return image
+
+    # def crossMark():
+    #     return np.array([[0,   0,   0,   0,   255, 255, 0,      0,   0,   0,    0,   0,   0],
+    #                      [0,   0,   0,   0,   255, 255, 0,      0,   0,   0,    0,   0,   0],
+    #                      [0,   0,   255, 255, 255, 255, 255,  255, 255, 255,    0,   0,   0],
+    #                      [0,   0,   255, 255, 255, 255, 255,  255, 255, 255,    0,   0,   0],
+    #                      [255, 255, 255, 255, 255, 255, 255,  255, 255, 255,    0,   0,   0],
+    #                      [255, 255, 255, 255, 255, 255, 255,  255, 255, 255,    0,   0,   0],
+    #                      [0,   255, 255, 255, 255, 255, 255,  255, 255, 255,    0,   0,   0],
+    #                      [0,   0,   255, 255, 255, 255, 255,  255,   0,   0,    0,   0,   0],
+    #                      [0,   0,   255, 255, 255, 255, 255,  255,   0,   0,    0,   0,   0],
+    #                      [0,   0,   0,     0, 255, 255,   0,    0,   0,   0,    0,   0,   0],
+    #                      [0,   0,   0,     0, 255, 255,   0,    0,   0,   0,    0,   0,   0],
+    #                      [0,   0,   0,     0, 255, 255,   0,    0,   0,   0,    0,   0,   0]], dtype=np.uint8)

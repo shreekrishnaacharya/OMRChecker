@@ -164,21 +164,31 @@ def process_omr(template, omr_resp):
     return csv_resp
 
 
-def process_ocr(template, ocr_img, save_file, file_id, csv_resp):
+def process_ocr(template, ocr_img, in_org, save_file, file_id, csv_resp):
     # Note: This is a reference function. It is not part of the OMR checker
     # So its implementation is completely subjective to user's requirements.
 
-    print("ocr_resp..................", template.ocr.items())
+    # print("ocr_resp..................", template.ocr.items())
 
     # Multi-column/multi-row questions which need to be concatenated
     for q_no, dims in template.ocr.items():
-        morph = ocr_img.copy()
+
+        morph = in_org.copy() if dims["original"] == True else ocr_img.copy()
         morph = morph[dims["orig"][0]:int(dims["crop"]
                       [0]+dims["orig"][0]), dims["orig"][1]:int(dims["crop"][1]+dims["orig"][1])]
-        stringname = pytesseract.image_to_string(morph)
-        print("name text ..........", stringname)
+        morph = cv2.cvtColor(morph, cv2.COLOR_BGR2GRAY)
+        morph = cv2.medianBlur(morph, 1)
+        morph = cv2.threshold(
+            morph, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        # kernel = np.ones((1, 1), np.uint8)
+        # morph = cv2.dilate(morph, kernel, iterations=0)
+        # stringname = pytesseract.image_to_string(
+        #     morph,  config='--oem 3 --psm 6')
+
+        stringname = pytesseract.image_to_string(morph, config=dims["config"])
+        print("name text ==>", stringname)
         csv_resp[q_no] = stringname
-        ImageUtils.save_img(save_file+"ocr_"+file_id, morph)
+        ImageUtils.save_img(save_file+"ocr_"+q_no+"_"+file_id, morph)
 
     # Single-column/single-row questions
 
@@ -219,8 +229,7 @@ def setup_output(paths, template):
     )
     print(ns.resp_cols, "columns.............")
     ns.empty_resp = [""] * len(ns.resp_cols)
-    ns.sheetCols = ["file_id", "input_path",
-                    "output_path", "score"] + ns.resp_cols
+    ns.sheetCols = ["file_name", "input_path"] + ns.resp_cols
     ns.OUTPUT_SET = []
     ns.files_obj = {}
     ns.filesMap = {
@@ -340,19 +349,31 @@ def process_files(omr_files, template, args, out):
             )
             MainOperations.show("Template Layout", template_layout, 1, 1)
             continue
-
+        in_org = in_omr
         in_omr1 = adjust_contrast_brightness(in_omr, 2.3, 5)
         # in_omr2 = cv2.GaussianBlur(in_omr1, (3, 3), 0)
-        lowerValues = np.array([0, 0, 108])
-        upperValues = np.array([255, 237, 255])
+
+        # oldpaper design'[
+        # lowerValues = np.array([0, 0, 108])]'
+        # upperValues = np.array([255, 237, 255])
+        # new paper design
+        lowerValues = np.array([0, 0, 225])
+        upperValues = np.array([255, 255, 255])
         in_omr3 = cv2.inRange(in_omr1, lowerValues, upperValues)
         in_omr = cv2.cvtColor(in_omr3, cv2.COLOR_GRAY2BGR)
+        # in_omr = cv2.GaussianBlur(in_omr1, (5, 5), 0)
+        # kernel_sharpening = np.array([[-1, 1, -1],
+        #                               [1, 1, 1],
+        #                               [-1, 1, -1]])
+        # in_omr1 = cv2.filter2D(in_omr1, -1, kernel_sharpening)
         # ImageUtils.save_img(out.paths.save_marked_dir +
         #                     "ocr_test"+str(files_counter)+"_.jpg", in_omr)
 
-        # cv2.imshow("im", in_omr)
+        # cv2.imshow("im", in_org)
         # cv2.waitKey(0)
         # continue
+        # print(out.paths.save_marked,"this is path loc")
+
         file_id = str(file_name)
         save_dir = out.paths.save_marked_dir
         response_dict, final_marked, multi_marked, _ = MainOperations.read_response(
@@ -363,8 +384,17 @@ def process_files(omr_files, template, args, out):
             auto_align=args["autoAlign"],
         )
         # concatenate roll nos, set unmarked responses, etc
+        in_org = cv2.cvtColor(in_org, cv2.IMREAD_GRAYSCALE)
         resp = process_omr(template, response_dict)
-        resp = process_ocr(template, in_omr, save_dir, file_id, resp)
+        resp = process_ocr(template, in_omr, in_org, save_dir, file_id, resp)
+        split = out.paths.save_marked.split("/")[2]
+        fname = "JNK_"+split+"_"+str(files_counter)
+        resp["FID"] = str(files_counter)
+
+        ImageUtils.save_img(out.paths.save_marked +
+                            fname+".jpg", final_marked)
+        ImageUtils.save_img(out.paths.save_copy +
+                            fname+".jpg", in_org)
         logger.info("\nRead Response: \t", resp, "\n")
         if config.outputs.show_image_level >= 2:
             MainOperations.show(
@@ -379,7 +409,7 @@ def process_files(omr_files, template, args, out):
         # This evaluates and returns the score attribute
         # TODO: Automatic scoring
         # score = evaluate(resp, explain_scoring=config.outputs.explain_scoring)
-        score = 0
+        # score = 0
 
         resp_array = []
         for k in out.resp_cols:
@@ -388,47 +418,46 @@ def process_files(omr_files, template, args, out):
         out.OUTPUT_SET.append([file_name] + resp_array)
 
         # TODO: Add roll number validation here
-        if multi_marked == 0:
-            STATS.files_not_moved += 1
-            new_file_path = save_dir + file_id
-            # Enter into Results sheet-
-            results_line = [file_name, file_path,
-                            new_file_path, score] + resp_array
-            # Write/Append to results_line file(opened in append mode)
-            pd.DataFrame(results_line, dtype=str).T.to_csv(
-                out.files_obj["Results"],
-                mode="a",
-                quoting=QUOTE_NONNUMERIC,
-                header=False,
-                index=False,
-            )
-            # Todo: Add score calculation from template.json
-            # print(
-            #     "[%d] Graded with score: %.2f" % (files_counter, score),
-            #     "\t file_id: ",
-            #     file_id,
-            # )
-            # print(files_counter,file_id,resp['Roll'],'score : ',score)
-        else:
-            # multi_marked file
-            logger.info("[%d] multi_marked, moving File: %s" %
-                        (files_counter, file_id))
-            new_file_path = out.paths.multi_marked_dir + file_name
-            if check_and_move(
-                constants.ERROR_CODES.MULTI_BUBBLE_WARN, file_path, new_file_path
-            ):
-                mm_line = [file_name, file_path,
-                           new_file_path, "NA"] + resp_array
-                pd.DataFrame(mm_line, dtype=str).T.to_csv(
-                    out.files_obj["MultiMarked"],
-                    mode="a",
-                    quoting=QUOTE_NONNUMERIC,
-                    header=False,
-                    index=False,
-                )
-            # else:
-            #     TODO:  Add appropriate record handling here
-            #     pass
+        # if multi_marked == 0:
+        STATS.files_not_moved += 1
+        new_file_path = save_dir + file_id
+        # Enter into Results sheet-
+        results_line = [file_name, file_path] + resp_array
+        # Write/Append to results_line file(opened in append mode)
+        pd.DataFrame(results_line, dtype=str).T.to_csv(
+            out.files_obj["Results"],
+            mode="a",
+            quoting=QUOTE_NONNUMERIC,
+            header=False,
+            index=False,
+        )
+        # Todo: Add score calculation from template.json
+        # print(
+        #     "[%d] Graded with score: %.2f" % (files_counter, score),
+        #     "\t file_id: ",
+        #     file_id,
+        # )
+        # print(files_counter,file_id,resp['Roll'],'score : ',score)
+        # else:
+        #     # multi_marked file
+        #     logger.info("[%d] multi_marked, moving File: %s" %
+        #                 (files_counter, file_id))
+        #     new_file_path = out.paths.multi_marked_dir + file_name
+        #     if check_and_move(
+        #         constants.ERROR_CODES.MULTI_BUBBLE_WARN, file_path, new_file_path
+        #     ):
+        #         mm_line = [file_name, file_path,
+        #                    new_file_path, "NA"] + resp_array
+        #         pd.DataFrame(mm_line, dtype=str).T.to_csv(
+        #             out.files_obj["MultiMarked"],
+        #             mode="a",
+        #             quoting=QUOTE_NONNUMERIC,
+        #             header=False,
+        #             index=False,
+        #         )
+        # else:
+        #     TODO:  Add appropriate record handling here
+        #     pass
 
     print_stats(start_time, files_counter)
 

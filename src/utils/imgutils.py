@@ -537,6 +537,18 @@ def setup_dirs(paths):
             os.makedirs(_dir)
         # else:
         #     logger.info("Present : " + _dir)
+    for _dir in [paths.save_marked, paths.errors_dir]:
+        if not os.path.exists(_dir):
+            logger.info("Created : " + _dir)
+            os.makedirs(_dir)
+        # else:
+        #     logger.info("Present : " + _dir)
+    for _dir in [paths.save_copy, paths.errors_dir]:
+        if not os.path.exists(_dir):
+            logger.info("Created : " + _dir)
+            os.makedirs(_dir)
+        # else:
+        #     logger.info("Present : " + _dir)
 
 
 class MainOperations:
@@ -1018,7 +1030,7 @@ class MainOperations:
             if config.outputs.save_detections and save_dir is not None:
                 if multi_roll:
                     save_dir = save_dir + "_MULTI_/"
-                ImageUtils.save_img(save_dir + name, final_marked)
+                # ImageUtils.save_img(save_dir + name, final_marked)
 
             ImageUtils.append_save_img(2, final_marked)
 

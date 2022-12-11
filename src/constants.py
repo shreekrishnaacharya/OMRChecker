@@ -66,6 +66,8 @@ class Paths:
     def __init__(self, output_dir):
         self.output_dir = output_dir
         self.save_marked_dir = f"{self.output_dir}/CheckedOMRs/"
+        self.save_marked = f"{self.output_dir}/marked/"
+        self.save_copy = f"{self.output_dir}/copy/"
         self.results_dir = f"{self.output_dir}/Results/"
         self.manual_dir = f"{self.output_dir}/Manual/"
         self.errors_dir = f"{self.manual_dir}ErrorFiles/"

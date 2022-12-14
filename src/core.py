@@ -388,7 +388,7 @@ def process_files(omr_files, template, args, out):
         resp = process_omr(template, response_dict)
         resp = process_ocr(template, in_omr, in_org, save_dir, file_id, resp)
         split = out.paths.save_marked.split("/")[2]
-        fname = "JNK_"+split+"_"+str(files_counter)
+        fname = "NUM_"+split+"_"+str(files_counter)
         resp["FID"] = str(files_counter)
 
         ImageUtils.save_img(out.paths.save_marked +
